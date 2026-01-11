@@ -521,6 +521,9 @@ void drawAzzan()
         sholatNow = -1;
         adzan = false;
         Buzzer(0);
+        strcpy(lastBuffTgl, "");
+        strcpy(lastBuffBln, "");
+        strcpy(lastBuffThn, "");
     }
 }
 

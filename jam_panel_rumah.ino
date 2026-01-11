@@ -24,8 +24,8 @@ char password[20] = "00000000";
 
 //pengaturan wifi untuk upload program
 const char* idwifi = "KELUARGA02";
-const char* passwifi = "suhartono";
-const char* host = "JAM_PANEL";
+const char* passwifi = "khusnul23";
+const char* host = "JAM_PANEL_RUMAH";
 
 //ESP8266WebServer server(80);
 
@@ -495,7 +495,7 @@ void setup() {
   Rtc.Begin();
   Rtc.Enable32kHzPin(false);
   Rtc.SetSquareWavePin(DS3231SquareWavePin_ModeNone);
-  //loadFromEEPROM();
+  loadFromEEPROM();
   delay(1000);
   if(stateMode){
     show = UPLOAD;
