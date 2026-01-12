@@ -1,8 +1,8 @@
-const char * const pasar[] PROGMEM = {"WAGE", "KLIWON", "LEGI", "PAHING", "PON"}; 
-const char * const Hari[] PROGMEM = {"MINGGU","SENIN","SELASA","RABU","KAMIS","JUM'AT","SABTU"};
+ char * const pasar[]  = {"WAGE", "KLIWON", "LEGI", "PAHING", "PON"}; 
+ char * const Hari[]  = {"MINGGU","SENIN","SELASA","RABU","KAMIS","JUM'AT","SABTU"};
 const char * const bulanMasehi[] PROGMEM = {"JANUARI", "FEBRUARI", "MARET", "APRIL", "MEI", "JUNI", "JULI", "AGUSTUS", "SEPTEMBER", "OKTOBER", "NOVEMBER", "DESEMBER" };
-const char* jadwal[] PROGMEM = {"SUBUH", "TERBIT", "DHUHA", "DZUHUR", "ASHAR", "MAGRIB", "ISYA'"};
-const char* jadwalAzzan[] PROGMEM = {"SUBUH","DZUHUR", "ASHAR", "MAGRIB", "ISYA'"};
+ char* jadwal[] = {"SUBUH", "TERBIT", "DHUHA", "DZUHUR", "ASHAR", "MAGRIB", "ISYA'"};
+ char* jadwalAzzan[] = {"SUBUH","DZUHUR", "ASHAR", "MAGRIB", "ISYA'"};
 const char * const namaBulanHijriah[] PROGMEM = {
     "MUHARRAM", "SHAFAR", "RABIUL AWAL",
     "RABIUL AKHIR", "JUMADIL AWAL", 
@@ -81,6 +81,7 @@ void showAnimasi() {
         Disp.drawText(52, 4, buff_thn);
         Serial.println(F("thn run"));
     }
+    DoSwap = true; 
 }
 /*
 
@@ -492,7 +493,7 @@ void drawAzzan()
     static uint8_t ct = 0;
     static uint32_t lsRn = 0;
     uint32_t Tmr = millis();
-    const uint8_t limit = config.durasiadzan;
+    const uint8_t limit = 80;//config.durasiadzan;
 
     if (Tmr - lsRn > 500 && ct <= limit)
     {
@@ -510,6 +511,7 @@ void drawAzzan()
             Buzzer(0);
             Disp.clear();
         }
+        DoSwap = true; 
         ct++;
     }
     
@@ -521,6 +523,9 @@ void drawAzzan()
         sholatNow = -1;
         adzan = false;
         Buzzer(0);
+        strcpy(lastBuffTgl, "");
+        strcpy(lastBuffBln, "");
+        strcpy(lastBuffThn, "");
     }
 }
 
@@ -545,7 +550,8 @@ void drawIqomah()  // Countdown Iqomah (9 menit)
 
     fType(0);
     dwCtr(0, 8, locBuff);
-
+    DoSwap = true; 
+    
     if (now - lsRn > 1000) 
     {   
         lsRn = now;
@@ -564,7 +570,7 @@ void drawIqomah()  // Countdown Iqomah (9 menit)
         Buzzer(0);
         Disp.clear();
         show = ANIM_BLINK;
-        Disp.setBrightness(20);
+        setBrightness(20);
         
     }    
 }
@@ -589,7 +595,8 @@ void blinkBlock()
     
     fType(3);
     dwCtr(0, 9, timeBuff);
-
+    DoSwap = true; 
+    
     // Update countdown setiap detik
     if (now - lsRn > 1000)
     {
@@ -607,7 +614,7 @@ void blinkBlock()
         ct = 0;
         Disp.clear();
         show = ANIM_CLOCK_BIG;
-        Disp.setBrightness(brightness);
+        setBrightness(brightness);
     }
 }
 //===================================== end =================================//

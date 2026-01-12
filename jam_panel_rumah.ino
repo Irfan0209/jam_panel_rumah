@@ -5,18 +5,13 @@
 #define DISPLAYS_HIGH 1
 
 
-#include <ESP8266WiFi.h>
-#include <WiFiManager.h>
-//////////
-#include <ESP8266mDNS.h>
-#include <WiFiUdp.h>
-#include <ArduinoOTA.h>
+#include <DMD3asis.h>
 
-#include <DMDESP.h>
-#include <ESP_EEPROM.h>
-DMDESP  Disp(DISPLAYS_WIDE, DISPLAYS_HIGH);  // Jumlah Panel P10 yang digunakan (KOLOM,BARIS)
 
-WiFiManager wm; // global wm instance
+
+#include <EEPROM.h>
+DMD3  Disp(DISPLAYS_WIDE, DISPLAYS_HIGH);  // Jumlah Panel P10 yang digunakan (KOLOM,BARIS)
+
 
 // Pengaturan hotspot WiFi dari ESP8266
 char ssid[20]     = "JAM_PANEL";
@@ -24,8 +19,8 @@ char password[20] = "00000000";
 
 //pengaturan wifi untuk upload program
 const char* idwifi = "KELUARGA02";
-const char* passwifi = "suhartono";
-const char* host = "JAM_PANEL";
+const char* passwifi = "khusnul23";
+const char* host = "JAM_PANEL_RUMAH";
 
 //ESP8266WebServer server(80);
 
@@ -44,7 +39,7 @@ const char* host = "JAM_PANEL";
 #include <C:\Users\irfan\Documents\Project\jws_masjid_AL-MA_ANY\fonts/BigNumber.h>
 
 
-#define BUZZ  D4 // PIN BUZZER
+#define BUZZ  2 // PIN BUZZER
 
 #define Font0 SystemFont5x7
 #define Font1 Font4x6
@@ -101,6 +96,7 @@ uint8_t    list,lastList;
 bool       stateMode       = 0;
 bool       stateBuzzWar    = 0;
 uint8_t    counterName     = 0;
+bool       DoSwap          = false;
 
 char lastBuffTgl[3] = "";
 char lastBuffBln[3] = "";
@@ -365,7 +361,7 @@ void handleSetTimeSerial() {
   getData(input);
 }
 
-//----------------------------------------------------------------------
+/*/----------------------------------------------------------------------
 // HJS589 P10 FUNGSI TAMBAHAN UNTUK NODEMCU ESP8266
 
 void ICACHE_RAM_ATTR refresh() {
@@ -373,6 +369,7 @@ void ICACHE_RAM_ATTR refresh() {
   timer0_write(ESP.getCycleCount() + 80000);
 }
 
+/*
 void Disp_init_esp() {
   
   Disp.start();
@@ -408,7 +405,7 @@ void AP_init() {
   
   Serial.println("Server dimulai.");  
 }*/
-
+/*
 void ONLINE(){
 
  WiFi.mode(WIFI_STA);
@@ -467,16 +464,35 @@ void ONLINE(){
     }
   });
   ArduinoOTA.begin();
-}
+}*/
+
+// =========================================
+// DMD3 P10 utility Function================
+// =========================================
+void Disp_init() 
+  { Disp.setDoubleBuffer(false);
+    Timer1.initialize(1500);
+    Timer1.attachInterrupt(scan);
+    setBrightness(100);  
+    Disp.clear();
+    Disp.swapBuffers();
+    }
+
+void setBrightness(int bright)
+  { Timer1.pwm(9,bright);}
+
+void scan()
+  { Disp.refresh();}
+
 
 void setup() {
   Serial.begin(9600);
-  EEPROM.begin(EEPROM_SIZE);
+  EEPROM.begin();
   
   pinMode(BUZZ, OUTPUT); 
-  digitalWrite(BUZZ,LOW);
-  delay(200);
   digitalWrite(BUZZ,HIGH);
+  delay(200);
+  digitalWrite(BUZZ,LOW);
   int rtn = I2C_ClearBus(); // clear the I2C bus first before calling Wire.begin()
     if (rtn != 0) {
       Serial.println(F("I2C bus error. Could not clear"));
@@ -495,80 +511,37 @@ void setup() {
   Rtc.Begin();
   Rtc.Enable32kHzPin(false);
   Rtc.SetSquareWavePin(DS3231SquareWavePin_ModeNone);
-  //loadFromEEPROM();
+  loadFromEEPROM();
   delay(1000);
-  if(stateMode){
-    show = UPLOAD;
-    ONLINE();
-  }else{
-    Disp_init_esp();
-    Serial.println("PANEL_OK");
-    //stateSendSholat = true;
-  }
- 
+  
+  Serial.println("PANEL_OK");
+  Disp_init();
   delay(1000);
-for(int i = 0; i < 4; i++)
- {
+  for(int i = 0; i < 4; i++)
+   {
       Buzzer(1);
       delay(80);
       Buzzer(0);
       delay(80);
- }
+   }
 
 }
 
 void loop() {
   
-  if(stateMode == 1){
-    ArduinoOTA.handle(); 
-    if (Serial.available()) {
-        String input = Serial.readStringUntil('\n');
-        input.trim();
-      
-        if (input.equalsIgnoreCase("restart=1")) {
-           stateMode = 0;
-           EEPROM.write(ADDR_MODE, stateMode);
-           EEPROM.commit();
-           delay(1000);
-           ESP.restart();
-        }
-   }
-  }else{
-    handleSetTimeSerial();
+    //handleSetTimeSerial()
+    //Disp.clear();
     check();
     islam();
-  }
+    DoSwap  = false ;
+    //Disp.clear();
  
 
  switch(show){
   case ANIM_SHOW :
     showAnimasi();
   break;
- /* 
-  case ANIM_CLOCK_BIG :
-    anim_JG();
-  break;
-
-  case ANIM_DATE :
-    drawDate();
-  break;
-
-  case ANIM_NAME :
-    (counterName==0)?drawName():scrollText();
-  break;
-
-  case ANIM_TEXT1:
-    drawText1();
-  break;
-
-  case ANIM_TEXT2 :
-    drawText2();
-  break;
-
-  case ANIM_SHOLAT :
-    drawJadwalSholat();
-  break;
-  */
+ 
   case ANIM_ADZAN :
     drawAzzan();
   break;
@@ -587,7 +560,7 @@ void loop() {
  };
   
   buzzerWarning(stateBuzzWar);
-  yield();
+  if(DoSwap){Disp.swapBuffers();} // Swap Buffer if Change
 }
 
 void getData(String input) {
@@ -639,7 +612,7 @@ void getData(String input) {
       }
       Buzzer(1);
       delay(500);
-      ESP.restart();
+      //ESP.restart();
     }
 
     else if (key == "name") {
@@ -650,13 +623,13 @@ void getData(String input) {
 
       Buzzer(1);
       delay(500);
-      ESP.restart();
+      //ESP.restart();
     }
 
 
     else if (key == "Br") {
       brightness = map(value.toInt(), 0, 100, 10, 255);
-      Disp.setBrightness(brightness);
+      setBrightness(brightness);
       saveIntToEEPROM(ADDR_BRIGHTNESS, brightness);
     }
 
@@ -742,12 +715,12 @@ void getData(String input) {
       EEPROM.write(ADDR_BUZZER, stateBuzzer);
     }
 
-    else if (key == "mode") {
+    /*else if (key == "mode") {
       stateMode = value.toInt();
       EEPROM.write(ADDR_MODE, stateMode);
       delay(1000);
-      ESP.restart();
-    }
+      //ESP.restart();
+    }*/
 
     else if (key == "status") {
       int state = value.toInt();
@@ -766,7 +739,7 @@ void getData(String input) {
         stateMode = 0;
         EEPROM.write(ADDR_MODE, stateMode); 
         delay(1000);
-        ESP.restart();
+        //ESP.restart();
       }
     }
 
@@ -777,11 +750,11 @@ void getData(String input) {
         //server.send(200, "text/plain", "Password WiFi diupdate");
         Buzzer(1);
         delay(500);
-        ESP.restart();
+        //ESP.restart();
       }
     }
 
-    EEPROM.commit(); // Penting! simpan perubahan
+    //EEPROM.commit(); // Penting! simpan perubahan
   }
   
 }
@@ -1006,7 +979,7 @@ void buzzerWarning(int cek){
       digitalWrite(BUZZ, state);
       //Serial.println("active");
       if(con <= 6) { con++; }
-      if(con == 7) { cek = 0; con = 0; state = false; stateBuzzWar = 0; }
+      if(con == 7) { cek = 0; con = 0; state = false; stateBuzzWar = 0; digitalWrite(BUZZ, LOW);}
       //Serial.println("con:" + String(con));
     } 
     
@@ -1018,10 +991,10 @@ void Buzzer(uint8_t state)
     
     switch(state){
       case 0 :
-        digitalWrite(BUZZ,HIGH);
+        digitalWrite(BUZZ,LOW);
       break;
       case 1 :
-        digitalWrite(BUZZ,LOW);
+        digitalWrite(BUZZ,HIGH);
       break;
     };
   }
