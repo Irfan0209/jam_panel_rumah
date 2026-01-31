@@ -8,16 +8,6 @@ void islam() {
     stateBuzzWar = 1;
   }
 
-  /*//redup
-  if(now.Hour() == 23 && now.Minute() == 00 && now.Second() == 00){
-    Disp.setBrightness(10);
-  }
-
-  //normal
-  if(now.Hour() == 02 && now.Minute() == 00 && now.Second() == 00){
-    Disp.setBrightness(brightness);
-  }*/
-
   if(timer - sv > 5000){
     //RtcDateTime now = Rtc.GetDateTime();
     JWS.Update(config.zonawaktu, config.latitude, config.longitude, config.altitude, now.Year(), now.Month(), now.Day()); // Jalankan fungsi ini untuk update jadwal sholat
@@ -27,10 +17,6 @@ void islam() {
     JWS.setIkhtiMa = dataIhty[3];
     JWS.setIkhtiIs = dataIhty[4];
     Hijir.Update(now.Year(), now.Month(), now.Day(), config.Correction);
-    //now.Year(), now.Month(), now.Day(), config.Correction
-//    Serial.println("tahun: " + String(now.Year()));
-//    Serial.println("bulan: " + String(now.Month()));
-//    Serial.println("tanggal: " + String(now.Day()));
     sv = timer;
   }
 }
