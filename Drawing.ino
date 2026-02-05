@@ -15,13 +15,13 @@ const char * const namaBulanHijriah[] PROGMEM = {
 //================= tampilan animasi ==================//
 
 void showAnimasi() {
-    if (adzan) return;
+    //if (adzan) return;
     
     static uint8_t y = 0;
     static uint8_t s = 0; // 0 = in, 1 = out
     static uint32_t lsRn = 0;
     static bool state = false;
-    static char lastBuffJam[6] = "";
+    //static char lastBuffJam[6] = "";
 
     uint32_t Tmr = millis();
     RtcDateTime now = Rtc.GetDateTime();
@@ -31,7 +31,7 @@ void showAnimasi() {
     uint16_t tahun = now.Year();
     
     // Format jam berkedip setiap detik ganjil
-    char buff_jam[6];
+    char buff_jam[8];
     sprintf(buff_jam, (detik & 1) ? "%02d:%02d" : "%02d %02d", now.Hour(), now.Minute());
 
     // Format tanggal, bulan, tahun
@@ -59,78 +59,226 @@ void showAnimasi() {
     fType(1); Disp.drawText(3,17-y, (state == true)?buff_hari : buff_jawa);
 
     fType(0);
-    if (strcmp(buff_jam, lastBuffJam) != 0) {
-        strcpy(lastBuffJam, buff_jam);
+//    if (strcmp(buff_jam, lastBuffJam) != 0) {
+//        strcpy(lastBuffJam, buff_jam);
         Disp.drawText(3, 1, buff_jam);
-    }
+//    }
 
-    if (strcmp(buff_tgl, lastBuffTgl) != 0) {
-        strcpy(lastBuffTgl, buff_tgl);
+//    if (strcmp(buff_tgl, lastBuffTgl) != 0) {
+//        strcpy(lastBuffTgl, buff_tgl);
         Disp.drawText(40, 0, buff_tgl);
-        Serial.println(F("tgl run"));
-    }
+        //Serial.println(F("tgl run"));
+//    }
 
-    if (strcmp(buff_bln, lastBuffBln) != 0) {
-        strcpy(lastBuffBln, buff_bln);
+//    if (strcmp(buff_bln, lastBuffBln) != 0) {
+//        strcpy(lastBuffBln, buff_bln);
         Disp.drawText(40, 9, buff_bln);
-        Serial.println(F("bln run"));
-    }
+        //Serial.println(F("bln run"));
+//    }
 
-    if (strcmp(buff_thn, lastBuffThn) != 0) {
-        strcpy(lastBuffThn, buff_thn);
+//    if (strcmp(buff_thn, lastBuffThn) != 0) {
+//        strcpy(lastBuffThn, buff_thn);
         Disp.drawText(52, 4, buff_thn);
-        Serial.println(F("thn run"));
-    }
+        //Serial.println(F("thn run"));
+//    }
     DoSwap = true; 
 }
+
+
+void sendTimeEvery5Min() {
+
+  RtcDateTime now = Rtc.GetDateTime();
+
+  static int8_t lastSentMinute = -1;
+  uint8_t hh = now.Hour();
+  uint8_t mm = now.Minute();
+  uint8_t ss = now.Second();
+  uint8_t dd = now.DayOfWeek();
+
+  // Kirim hanya tiap 5 menit
+  if ((mm % 5) != 0) {
+    lastSentMinute = -1;   // reset agar siap kirim di menit berikutnya
+    return;
+  }
+
+  // Cegah kirim berulang di menit yang sama
+  if (mm == lastSentMinute) return;
+
+  lastSentMinute = mm;
+
+  char buf[32];
+  snprintf(buf, sizeof(buf),
+           "TIME:%02d,%02d,%02d,%d",
+           hh, mm, ss, dd);
+
+  Serial.println(buf);
+}
+
+
+/*/================= animasi jadwal sholat new =================//
+void updateAnimSholat() {
+  if(adzan) return;
+  
+  RtcDateTime now = Rtc.GetDateTime();
+  static int y = 0, y1 = 0;
+  static uint8_t s = 0, s1 = 0;
+  static bool run = false;
+
+  static uint32_t lsRn_y1 = 0;
+  static uint32_t lsRn_y = 0;
+  static uint32_t tHold = 0;
+  static uint8_t list = 0;
+
+  uint32_t Tmr = millis();
+
+  // Pilih waktu sholat sesuai list
+  float stime;
+  switch (list) {
+    case 0: stime = JWS.floatImsak; break;
+    case 1: stime = JWS.floatSubuh; break;
+    case 2: stime = JWS.floatTerbit; break;
+    case 3: stime = JWS.floatDzuhur; break;
+    case 4: stime = JWS.floatAshar; break;
+    case 5: stime = JWS.floatMaghrib; break;
+    case 6: stime = JWS.floatIsya; break;
+    default: stime = 0; break;
+  }
+
+  // Transisi vertikal y1 (jam muncul/hilang)
+  if ((Tmr - lsRn_y1) > 55) {
+    lsRn_y1 = Tmr;
+
+    if (s1 == 0 && y1 < 17) {
+      y1++;
+    } else if (s1 == 1 && y1 > 0) {
+      y1--;
+    }
+  }
+  //Serial.println("y1:" + String(y1));
+  // Saat y1 selesai muncul, mulai animasi jadwal
+  if (y1 == 17 && s1 == 0) {
+    run = true; 
+    if(now.Second() % 2 ){
+      Disp.drawRect(14, 3, 15, 5, 1); //posisi y = 6
+      Disp.drawRect(14, 10, 15, 12, 1); //posisi y = 9
+    }else{
+      Disp.drawRect(14, 3, 15, 5, 0); //posisi y = 5
+      Disp.drawRect(14, 10, 15, 12, 0); //posisi y = 8
+    }
+  }
+
+  // Animasi gerakan teks (y)
+  if (run && (Tmr - lsRn_y) > 55) {
+    lsRn_y = Tmr;
+
+    if (s == 0 && y < 9) {
+      y++;
+    } else if (s == 1 && y > 0) {
+      y--;
+    }
+  }
+
+  // Delay sebelum animasi keluar (reverse)
+  if (y == 9 && s == 0 && tHold == 0) {
+    tHold = millis();
+  }
+  if (tHold > 0 && (millis() - tHold > 1500)) {//4000
+    s = 1;     // mulai keluar
+    tHold = 0; // reset timer
+  }
+
+  // Setelah animasi selesai
+  if (y == 0 && s == 1) {
+    s = 0;
+    list = (list + 1) % 7;
+    if (list == 0) {
+      run = false;
+      s1 = 1; // trigger keluar vertikal
+      Disp.drawRect(14, 4, 15, 5, 0); //posisi y = 5
+      Disp.drawRect(14, 11, 15, 12, 0); //posisi y = 8
+    }
+  }
+
+// Tampilkan jam digital
+  fType(3);
+  Disp.drawChar(0, y1 - 17, '0' + now.Hour() / 10); //12
+  Disp.drawChar(7, y1 - 17, '0' + now.Hour() % 10);
+
+  Disp.drawChar(17, y1 - 17, '0' + now.Minute() / 10);
+  Disp.drawChar(24, y1 - 17, '0' + now.Minute() % 10);
+
+  // Tampilkan teks jadwal sholat
+  uint8_t shour = (uint8_t)stime;
+  uint8_t sminute = (uint8_t)((stime - shour) * 60);
+
+  char buf[6];
+  buf[0] = '0' + shour / 10;
+  buf[1] = '0' + shour % 10;
+  buf[2] = ':';
+  buf[3] = '0' + sminute / 10;
+  buf[4] = '0' + sminute % 10;
+  buf[5] = '\0';
+
+  fType(1);
+  dwCtr(31, y - 9, jadwal[list]);
+  dwCtr(32, 18 - y, buf);
+  DoSwap = true;
+  if (y1 == 0 && s1 == 1) {
+    s1 = 0;
+    show = ANIM_SHOLAT; // ganti mode jika perlu
+  }
+}*/
 
 //======================= end ==========================//
 
 /*======================= animasi memasuki waktu sholat ====================================*/
 void drawAzzan()
-{
-    //static const char *jadwal[] = {"SUBUH", "DZUHUR", "ASHAR", "MAGRIB","ISYA'"};
-    const char *sholat = jadwalAzzan[sholatNow]; 
+  {
+   // if(adzan) return;
+    RtcDateTime now = Rtc.GetDateTime();
+    static const char *jadwal[] = {"SUBUH", "DZUHUR", "ASHAR", "MAGHRIB","ISYA'"};
+    const char *sholat = jadwal[sholatNow]; 
     static uint8_t ct = 0;
     static uint32_t lsRn = 0;
     uint32_t Tmr = millis();
-    const uint8_t limit = 80;//config.durasiadzan;
-
-    if (Tmr - lsRn > 500 && ct <= limit)
+    const uint8_t limit = config.durasiadzan;
+    char buff_jam[10];
+    char buff_sec[2];
+    char buff_text1[10];
+    char buff_text2[10];
+  
+    sprintf(buff_jam,"%02d:%02d",now.Hour(),now.Minute());
+    sprintf(buff_sec,"%02d  ",now.Second());
+    sprintf(buff_text1,"%s","ADZAN");
+    sprintf(buff_text2,"%s",jadwalAzzan[sholatNow]);  
+   
+   if (Tmr - lsRn > 500 && ct <= limit)
     {
         lsRn = Tmr;
         if (!(ct & 1))  // Lebih cepat dibandingkan ct % 2 == 0
         {
-          fType(0);
-            dwCtr(1, 0, "ADZAN");
-            fType(0);
-            dwCtr(1, 9, sholat);
-            Buzzer(1);
+          fType(1); Disp.drawText(2,0,buff_text1);
+          fType(1); Disp.drawText(1,8,buff_text2);
+          Buzzer(1);
         }
-        else
-        {
+        else 
+          {
             Buzzer(0);
-            Disp.clear();
-        }
-        DoSwap = true; 
+          }
+         DoSwap = true;
         ct++;
     }
-    
-    if ((Tmr - lsRn) > 1500 && (ct > limit))
+      fType(1); dwCtr(42,9,buff_sec);
+      fType(1); dwCtr(34,0,buff_jam);
+       //DoSwap = true;
+   if ((Tmr - lsRn) > 1500 && (ct > limit))
     {
+        adzan = 0;
         show = ANIM_SHOW;
-        Disp.clear();
         ct = 0;
-        sholatNow = -1;
-        adzan = false;
         Buzzer(0);
-        strcpy(lastBuffTgl, "");
-        strcpy(lastBuffBln, "");
-        strcpy(lastBuffThn, "");
     }
-}
-
-
+  }
 //===================================== end =================================//
 
 //=========================== setingan untuk tampilan text=================//

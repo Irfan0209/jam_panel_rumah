@@ -4,23 +4,27 @@
 #define DISPLAYS_WIDE 2
 #define DISPLAYS_HIGH 1
 
+//#include "OneButton.h"
 
 #include <DMD3asis.h>
 
-
+//#define BUTTON_UP        3
+//#define BUTTON_DOWN      4
 
 #include <EEPROM.h>
 DMD3  Disp(DISPLAYS_WIDE, DISPLAYS_HIGH);  // Jumlah Panel P10 yang digunakan (KOLOM,BARIS)
 
+//OneButton UP(BUTTON_UP, false);
+//OneButton DOWN(BUTTON_DOWN, false);
 
 // Pengaturan hotspot WiFi dari ESP8266
-char ssid[20]     = "JAM_PANEL";
+//char ssid[20]     = "JAM_PANEL";
 char password[20] = "00000000";
 
 //pengaturan wifi untuk upload program
-const char* idwifi = "KELUARGA02";
-const char* passwifi = "khusnul23";
-const char* host = "JAM_PANEL_RUMAH";
+//const char* idwifi = "KELUARGA02";
+//const char* passwifi = "khusnul23";
+//const char* host = "JAM_PANEL_RUMAH";
 
 //ESP8266WebServer server(80);
 
@@ -61,7 +65,7 @@ uint8_t displayBlink[]  = {1,1,1,1,1,1};
 uint8_t dataIhty[]      = {0,0,0,0,0,0};
 
 struct Config {
-  uint8_t durasiadzan = 40;
+  uint8_t durasiadzan = 60;
   uint8_t altitude = 10;
   double latitude = -7.364057;
   double longitude = 112.646222;
@@ -75,7 +79,7 @@ Config config;
 
 // Variabel untuk waktu, tanggal, teks berjalan, tampilan ,dan kecerahan
 char text1[101], text2[101],name[101];
-uint16_t   brightness    = 50;
+uint16_t   brightness    = 100;
 bool       adzan         = 0;
 bool       stateBuzzer   = 1;
 uint8_t    DWidth        = Disp.width();
@@ -98,9 +102,6 @@ bool       stateBuzzWar    = 0;
 uint8_t    counterName     = 0;
 bool       DoSwap          = false;
 
-char lastBuffTgl[3] = "";
-char lastBuffBln[3] = "";
-char lastBuffThn[3] = "";
 /*============== end ================*/
 
 enum Show{
@@ -120,9 +121,7 @@ enum Show{
 Show show = ANIM_SHOW;
 
 
-#define EEPROM_SIZE 512
-
-//#define EEPROM_SIZE       512
+//#define EEPROM_SIZE 512
 
 // Alamat EEPROM
 #define ADDR_TEXT1        0     // text1, max 100 bytes
@@ -178,18 +177,22 @@ void handleSetTimeSerial() {
 
   if (input.length() == 0) return;
 
-//  Serial.print("Input diterima: ");
-//  Serial.println(input);
+int eq = input.indexOf('=');
+  if (eq != -1) {
+    String key = input.substring(0, eq);
+    String value = input.substring(eq + 1);
+  if (key == "jadwal") {
+      stateSendSholat = value.toInt();
+    }
+  }
 
-  // Panggil fungsi getData() untuk memproses input
-  getData(input);
 }
 
 // =========================================
 // DMD3 P10 utility Function================
 // =========================================
 void Disp_init() 
-  { Disp.setDoubleBuffer(false);
+  { Disp.setDoubleBuffer(true);
     Timer1.initialize(1500);
     Timer1.attachInterrupt(scan);
     setBrightness(100);  
@@ -207,6 +210,9 @@ void scan()
 void setup() {
   Serial.begin(9600);
   EEPROM.begin();
+
+//  UP.attachClick(readUp);
+//  DOWN.attachClick(readDown);
   
   pinMode(BUZZ, OUTPUT); 
   digitalWrite(BUZZ,HIGH);
@@ -230,7 +236,7 @@ void setup() {
   Rtc.Begin();
   Rtc.Enable32kHzPin(false);
   Rtc.SetSquareWavePin(DS3231SquareWavePin_ModeNone);
-  loadFromEEPROM();
+  //loadFromEEPROM();
   delay(1000);
   
   Serial.println("PANEL_OK");
@@ -247,29 +253,33 @@ void setup() {
 }
 
 void loop() {
-  
-    //handleSetTimeSerial()
-    check();
-    islam();
-    DoSwap  = false ;
-    //Disp.clear();
- 
 
- switch(show){
-  case ANIM_SHOW :
-    showAnimasi();
-  break;
+    handleSetTimeSerial();
+    check();
+    islam(); 
+    DoSwap  = false ;
+    sendTimeEvery5Min();
+    Disp.clear();
+
+      switch(show){
+        case ANIM_SHOW :
+           showAnimasi();
+        break;
  
-  case ANIM_ADZAN :
-    drawAzzan();
-  break;
- };
-  
+        case ANIM_ADZAN :
+           drawAzzan();
+        break;
+
+        case ANIM_SHOLAT :
+          //updateAnimSholat();
+        break;
+      };
+
   buzzerWarning(stateBuzzWar);
   if(DoSwap){Disp.swapBuffers();} // Swap Buffer if Change
 }
 
-void getData(String input) {
+/*void getData(String input) {
 
   int eq = input.indexOf('=');
   if (eq != -1) {
@@ -426,7 +436,7 @@ void getData(String input) {
       EEPROM.write(ADDR_MODE, stateMode);
       delay(1000);
       //ESP.restart();
-    }*/
+    }*
 
     else if (key == "status") {
       int state = value.toInt();
@@ -464,8 +474,8 @@ void getData(String input) {
   }
   
 }
-
-
+*/
+/*
 void loadFromEEPROM() {
   //Serial.println("=== Membaca Data dari EEPROM ===");
  
@@ -517,8 +527,8 @@ void loadFromEEPROM() {
     ptrLat[i] = EEPROM.read(ADDR_LATITUDE + i);
   }
   config.latitude = latVal;
-//  Serial.print("Latitude: ");
-//  Serial.println(config.latitude, 6);
+  Serial.print("Latitude: ");
+  Serial.println(config.latitude, 6);
 
   // Longitude
   float lonVal;
@@ -527,16 +537,16 @@ void loadFromEEPROM() {
     ptrLon[i] = EEPROM.read(ADDR_LONGITUDE + i);
   }
   config.longitude = lonVal;
-//  Serial.print("Longitude: ");
-//  Serial.println(config.longitude, 6);
+  Serial.print("Longitude: ");
+  Serial.println(config.longitude, 6);
 
   config.zonawaktu = EEPROM.read(ADDR_TZ) | (EEPROM.read(ADDR_TZ + 1) << 8);
-//  Serial.print("Zona Waktu: ");
-//  Serial.println(config.zonawaktu);
+  Serial.print("Zona Waktu: ");
+  Serial.println(config.zonawaktu);
 
   config.altitude = EEPROM.read(ADDR_ALTITUDE) | (EEPROM.read(ADDR_ALTITUDE + 1) << 8);
-//  Serial.print("Altitude: ");
-//  Serial.println(config.altitude);
+  Serial.print("Altitude: ");
+  Serial.println(config.altitude);
 
   for (int i = 0; i < 6; i++) {
     iqomah[i] = EEPROM.read(ADDR_IQOMAH + i);
@@ -589,7 +599,7 @@ void loadFromEEPROM() {
 //  Serial.println("=== Selesai Membaca EEPROM ===\n");
 //  Serial.println("OK");
 }
-
+*/
  //----------------------------------------------------------------------
 // I2C_ClearBus menghindari gagal baca RTC (nilai 00 atau 165)
 
@@ -689,3 +699,17 @@ void Buzzer(uint8_t state)
       break;
     };
   }
+
+//void readUp(){
+//  showVolumeTemp = true;
+//  volumeDisplayMillis = millis();
+//  volume < 25? volume++ : volume=25;
+//  Serial.println("VOL:" + String(volume));
+//}
+//
+//void readDown(){
+//  showVolumeTemp = true;
+//  volumeDisplayMillis = millis();
+//  volume > 0? volume-- : volume=0;
+//  Serial.println("VOL:" + String(volume));
+//}
