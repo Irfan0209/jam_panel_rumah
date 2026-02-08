@@ -1,22 +1,22 @@
  char * const pasar[]  = {"WAGE", "KLIWON", "LEGI", "PAHING", "PON"}; 
  char * const Hari[]  = {"MINGGU","SENIN","SELASA","RABU","KAMIS","JUM'AT","SABTU"};
-const char * const bulanMasehi[] PROGMEM = {"JANUARI", "FEBRUARI", "MARET", "APRIL", "MEI", "JUNI", "JULI", "AGUSTUS", "SEPTEMBER", "OKTOBER", "NOVEMBER", "DESEMBER" };
- char* jadwal[] = {"SUBUH", "TERBIT", "DHUHA", "DZUHUR", "ASHAR", "MAGRIB", "ISYA'"};
+//const char * const bulanMasehi[] PROGMEM = {"JANUARI", "FEBRUARI", "MARET", "APRIL", "MEI", "JUNI", "JULI", "AGUSTUS", "SEPTEMBER", "OKTOBER", "NOVEMBER", "DESEMBER" };
+// char* jadwal[] = {"SUBUH", "TERBIT", "DHUHA", "DZUHUR", "ASHAR", "MAGRIB", "ISYA'"};
  char* jadwalAzzan[] = {"SUBUH","DZUHUR", "ASHAR", "MAGRIB", "ISYA'"};
-const char * const namaBulanHijriah[] PROGMEM = {
-    "MUHARRAM", "SHAFAR", "RABIUL AWAL",
-    "RABIUL AKHIR", "JUMADIL AWAL", 
-    "JUMADIL AKHIR", "RAJAB",
-    "SYA'BAN", "RAMADHAN", "SYAWAL",
-    "DZULQA'DAH", "DZULHIJAH"
-};
+//const char * const namaBulanHijriah[] PROGMEM = {
+//    "MUHARRAM", "SHAFAR", "RABIUL AWAL",
+//    "RABIUL AKHIR", "JUMADIL AWAL", 
+//    "JUMADIL AKHIR", "RAJAB",
+//    "SYA'BAN", "RAMADHAN", "SYAWAL",
+//    "DZULQA'DAH", "DZULHIJAH"
+//};
 
 
 //================= tampilan animasi ==================//
 
 void showAnimasi() {
     //if (adzan) return;
-    
+   //  RtcDateTime now = Rtc.GetDateTime();
     static uint8_t y = 0;
     static uint8_t s = 0; // 0 = in, 1 = out
     static uint32_t lsRn = 0;
@@ -24,7 +24,7 @@ void showAnimasi() {
     //static char lastBuffJam[6] = "";
 
     uint32_t Tmr = millis();
-    RtcDateTime now = Rtc.GetDateTime();
+    //RtcDateTime now = Rtc.GetDateTime();
     // Ambil waktu dari RTC hanya jika diperlukan
     uint8_t daynow = now.DayOfWeek();
     uint8_t detik = now.Second();
@@ -59,35 +59,22 @@ void showAnimasi() {
     fType(1); Disp.drawText(3,17-y, (state == true)?buff_hari : buff_jawa);
 
     fType(0);
-//    if (strcmp(buff_jam, lastBuffJam) != 0) {
-//        strcpy(lastBuffJam, buff_jam);
+
         Disp.drawText(3, 1, buff_jam);
-//    }
 
-//    if (strcmp(buff_tgl, lastBuffTgl) != 0) {
-//        strcpy(lastBuffTgl, buff_tgl);
         Disp.drawText(40, 0, buff_tgl);
-        //Serial.println(F("tgl run"));
-//    }
-
-//    if (strcmp(buff_bln, lastBuffBln) != 0) {
-//        strcpy(lastBuffBln, buff_bln);
+ 
         Disp.drawText(40, 9, buff_bln);
-        //Serial.println(F("bln run"));
-//    }
-
-//    if (strcmp(buff_thn, lastBuffThn) != 0) {
-//        strcpy(lastBuffThn, buff_thn);
+ 
         Disp.drawText(52, 4, buff_thn);
-        //Serial.println(F("thn run"));
-//    }
+ 
     DoSwap = true; 
 }
 
 
 void sendTimeEvery5Min() {
 
-  RtcDateTime now = Rtc.GetDateTime();
+  //RtcDateTime now = Rtc.GetDateTime();
 
   static int8_t lastSentMinute = -1;
   uint8_t hh = now.Hour();
@@ -113,7 +100,6 @@ void sendTimeEvery5Min() {
 
   Serial.println(buf);
 }
-
 
 /*/================= animasi jadwal sholat new =================//
 void updateAnimSholat() {
@@ -234,8 +220,7 @@ void updateAnimSholat() {
 /*======================= animasi memasuki waktu sholat ====================================*/
 void drawAzzan()
   {
-   // if(adzan) return;
-    RtcDateTime now = Rtc.GetDateTime();
+    //RtcDateTime now = Rtc.GetDateTime();
     static const char *jadwal[] = {"SUBUH", "DZUHUR", "ASHAR", "MAGHRIB","ISYA'"};
     const char *sholat = jadwal[sholatNow]; 
     static uint8_t ct = 0;
@@ -260,12 +245,13 @@ void drawAzzan()
           fType(1); Disp.drawText(2,0,buff_text1);
           fType(1); Disp.drawText(1,8,buff_text2);
           Buzzer(1);
+          DoSwap = true;
         }
         else 
           {
             Buzzer(0);
           }
-         DoSwap = true;
+         
         ct++;
     }
       fType(1); dwCtr(42,9,buff_sec);

@@ -4,29 +4,10 @@
 #define DISPLAYS_WIDE 2
 #define DISPLAYS_HIGH 1
 
-//#include "OneButton.h"
-
 #include <DMD3asis.h>
-
-//#define BUTTON_UP        3
-//#define BUTTON_DOWN      4
 
 #include <EEPROM.h>
 DMD3  Disp(DISPLAYS_WIDE, DISPLAYS_HIGH);  // Jumlah Panel P10 yang digunakan (KOLOM,BARIS)
-
-//OneButton UP(BUTTON_UP, false);
-//OneButton DOWN(BUTTON_DOWN, false);
-
-// Pengaturan hotspot WiFi dari ESP8266
-//char ssid[20]     = "JAM_PANEL";
-char password[20] = "00000000";
-
-//pengaturan wifi untuk upload program
-//const char* idwifi = "KELUARGA02";
-//const char* passwifi = "khusnul23";
-//const char* host = "JAM_PANEL_RUMAH";
-
-//ESP8266WebServer server(80);
 
 #include <Wire.h>
 #include <RtcDS3231.h>
@@ -79,7 +60,7 @@ Config config;
 
 // Variabel untuk waktu, tanggal, teks berjalan, tampilan ,dan kecerahan
 char text1[101], text2[101],name[101];
-uint16_t   brightness    = 100;
+uint16_t   brightness    = 30;
 bool       adzan         = 0;
 bool       stateBuzzer   = 1;
 uint8_t    DWidth        = Disp.width();
@@ -89,17 +70,17 @@ bool       reset_x       = 0;
 
 /*======library tambahan=======*/
 //bool       flagAnim = false;
-uint8_t    speedDate      = 40; // Kecepatan default date
-uint8_t    speedText1     = 40; // Kecepatan default text  
-uint8_t    speedText2     = 40;
-uint8_t    speedName      = 40;
-float      dataFloat[10];
-int        dataInteger[10];
+//uint8_t    speedDate      = 40; // Kecepatan default date
+//uint8_t    speedText1     = 40; // Kecepatan default text  
+//uint8_t    speedText2     = 40;
+//uint8_t    speedName      = 40;
+//float      dataFloat[10];
+//int        dataInteger[10];
 bool       stateSendSholat = false; 
-uint8_t    list,lastList;
-bool       stateMode       = 0;
+//uint8_t    list,lastList;
+//bool       stateMode       = 0;
 bool       stateBuzzWar    = 0;
-uint8_t    counterName     = 0;
+//uint8_t    counterName     = 0;
 bool       DoSwap          = false;
 
 /*============== end ================*/
@@ -168,25 +149,38 @@ void saveIntToEEPROM(int addr, int16_t value) {
   EEPROM.write(addr + 1, highByte(value));
 }
 
-// Fungsi untuk mengatur jam, tanggal, running text, dan kecerahan dari Serial
+#define SERIAL_BUF 32
+char serialBuf[SERIAL_BUF];
+uint8_t serialPos = 0;
+
 void handleSetTimeSerial() {
-  if (!Serial.available()) return;
+  while (Serial.available()) {
+    char c = Serial.read();
 
-  String input = Serial.readStringUntil('\n');
-  input.trim(); // hapus spasi dan newline
-
-  if (input.length() == 0) return;
-
-int eq = input.indexOf('=');
-  if (eq != -1) {
-    String key = input.substring(0, eq);
-    String value = input.substring(eq + 1);
-  if (key == "jadwal") {
-      stateSendSholat = value.toInt();
+    if (c == '\n') {
+      serialBuf[serialPos] = '\0';
+      parseCommand(serialBuf);
+      serialPos = 0;
+    }
+    else if (serialPos < SERIAL_BUF - 1) {
+      serialBuf[serialPos++] = c;
     }
   }
-
 }
+
+void parseCommand(char *cmd) {
+  char *eq = strchr(cmd, '=');
+  if (!eq) return;
+
+  *eq = '\0';
+  char *key = cmd;
+  char *value = eq + 1;
+
+  if (strcmp(key, "jadwal") == 0) {
+    stateSendSholat = atoi(value);
+  }
+}
+
 
 // =========================================
 // DMD3 P10 utility Function================
@@ -195,7 +189,7 @@ void Disp_init()
   { Disp.setDoubleBuffer(true);
     Timer1.initialize(1500);
     Timer1.attachInterrupt(scan);
-    setBrightness(100);  
+    setBrightness(brightness);  
     Disp.clear();
     Disp.swapBuffers();
     }
@@ -210,9 +204,6 @@ void scan()
 void setup() {
   Serial.begin(9600);
   EEPROM.begin();
-
-//  UP.attachClick(readUp);
-//  DOWN.attachClick(readDown);
   
   pinMode(BUZZ, OUTPUT); 
   digitalWrite(BUZZ,HIGH);
@@ -236,7 +227,6 @@ void setup() {
   Rtc.Begin();
   Rtc.Enable32kHzPin(false);
   Rtc.SetSquareWavePin(DS3231SquareWavePin_ModeNone);
-  //loadFromEEPROM();
   delay(1000);
   
   Serial.println("PANEL_OK");
@@ -254,10 +244,44 @@ void setup() {
 
 void loop() {
 
+  static uint32_t lastRtcUpdate = 0;
+
+  if (millis() - lastRtcUpdate >= 1000) { // update tiap 1 detik
+    lastRtcUpdate = millis();
+    now = Rtc.GetDateTime();
+  }
+
+  handleSetTimeSerial();
+  check();
+  islam();
+  sendTimeEvery5Min();
+
+  Disp.clear();
+
+  switch (show) {
+    case ANIM_SHOW:
+      showAnimasi();
+      break;
+
+    case ANIM_ADZAN:
+      drawAzzan();
+      break;
+
+    case ANIM_SHOLAT:
+      // updateAnimSholat();
+      break;
+  }
+
+  buzzerWarning(stateBuzzWar);
+  Disp.swapBuffers();
+}
+
+/*void loop() {
+
     handleSetTimeSerial();
     check();
     islam(); 
-    DoSwap  = false ;
+    //DoSwap  = false ;
     sendTimeEvery5Min();
     Disp.clear();
 
@@ -277,329 +301,8 @@ void loop() {
 
   buzzerWarning(stateBuzzWar);
   if(DoSwap){Disp.swapBuffers();} // Swap Buffer if Change
-}
+}*/
 
-/*void getData(String input) {
-
-  int eq = input.indexOf('=');
-  if (eq != -1) {
-    String key = input.substring(0, eq);
-    String value = input.substring(eq + 1);
-    
-    if (key == "Tm") {
-  String setJam = value;
-
-  // Format: HH:MM:SS-Tanggal-Bulan-Tahun
-  uint8_t colon1 = value.indexOf(':');
-  uint8_t colon2 = value.indexOf(':', colon1 + 1);
-  uint8_t dash1 = value.indexOf('-');
-  uint8_t dash2 = value.indexOf('-', dash1 + 1);
-  uint8_t dash3 = value.indexOf('-', dash2 + 1);
-
-  if (colon1 != -1 && colon2 != -1 && dash1 != -1 && dash2 != -1 && dash3 != -1) {
-    uint8_t jam    = value.substring(0, colon1).toInt();
-    uint8_t menit  = value.substring(colon1 + 1, colon2).toInt();
-    uint8_t detik  = value.substring(colon2 + 1, dash1).toInt();
-    uint8_t tanggal= value.substring(dash1 + 1, dash2).toInt();
-    uint8_t bulan  = value.substring(dash2 + 1, dash3).toInt();
-    uint16_t tahun = value.substring(dash3 + 1).toInt();
-
-    Rtc.SetDateTime(RtcDateTime(tahun, bulan, tanggal,jam, menit, detik));
-    //JWS.Update(config.zonawaktu, config.latitude, config.longitude, config.altitude, year(),month(), day());
-     stateSendSholat = 1;
-  }
-}
-
-    else if (key == "text") {
-      int separatorIndex = value.indexOf('-');
-      if (separatorIndex != -1) {
-        int indexText = value.substring(0, separatorIndex).toInt();
-        String pesan = value.substring(separatorIndex + 1);
-
-        if (pesan.length() > 100) pesan = pesan.substring(0, 100);
-
-        if (indexText == 1) {
-          pesan.toCharArray(text1, 101);
-          saveStringToEEPROM(ADDR_TEXT1, String(text1), 100);
-        } else if (indexText == 2) {
-          pesan.toCharArray(text2, 101);
-          saveStringToEEPROM(ADDR_TEXT2, String(text2), 100);
-        }
-      }
-      Buzzer(1);
-      delay(500);
-      //ESP.restart();
-    }
-
-    else if (key == "name") {
-       if (value.length() > 100) {value = value.substring(0, 100);} // Batasi max 100 karakter
-       value.toCharArray(name, 101); // +1 untuk null-terminator
-       Serial.println(name);
-       saveStringToEEPROM(ADDR_NAME, String(name), 100);
-
-      Buzzer(1);
-      delay(500);
-      //ESP.restart();
-    }
-
-
-    else if (key == "Br") {
-      brightness = map(value.toInt(), 0, 100, 10, 255);
-      setBrightness(brightness);
-      saveIntToEEPROM(ADDR_BRIGHTNESS, brightness);
-    }
-
-    else if (key == "Sptx1") {
-      speedText1 = map(value.toInt(), 0, 100, 10, 80);
-      saveIntToEEPROM(ADDR_SPEEDTX1, speedText1);
-    }
-
-    else if (key == "Sptx2") {
-      speedText2 = map(value.toInt(), 0, 100, 10, 80);
-      saveIntToEEPROM(ADDR_SPEEDTX2, speedText2);
-    }
-
-    else if (key == "Spdt") {
-      speedDate = map(value.toInt(), 0, 100, 10, 80);
-      saveIntToEEPROM(ADDR_SPEEDDT, speedDate);
-    }
-
-    else if (key == "Spnm") {
-      speedName = map(value.toInt(), 0, 100, 10, 80);
-      saveIntToEEPROM(ADDR_SPEEDNAME, speedName);
-    }
-
-    else if (key == "Lt") {
-      config.latitude = roundf(value.toFloat() * 1000000.0) / 1000000.0;
-      saveFloatToEEPROM(ADDR_LATITUDE, config.latitude);
-    }
-
-    else if (key == "Lo") {
-      config.longitude = roundf(value.toFloat() * 1000000.0) / 1000000.0;
-      saveFloatToEEPROM(ADDR_LONGITUDE, config.longitude);
-    }
-
-    else if (key == "Tz") {
-      config.zonawaktu = value.toInt();
-      saveIntToEEPROM(ADDR_TZ, config.zonawaktu);
-    }
-
-    else if (key == "Al") {
-      config.altitude = value.toInt();
-      saveIntToEEPROM(ADDR_ALTITUDE, config.altitude);
-    }
-
-    else if (key == "Iq") {
-      int separatorIndex = value.indexOf('-');
-      int indexSholat = value.substring(0, separatorIndex).toInt();
-      int indexKoreksi = value.substring(separatorIndex + 1).toInt();  
-      iqomah[indexSholat] = indexKoreksi;
-      EEPROM.write(ADDR_IQOMAH + indexSholat, indexKoreksi);
-    }
-
-    else if (key == "Dy") {
-      int separatorIndex = value.indexOf('-');
-      int indexSholat = value.substring(0, separatorIndex).toInt();
-      int indexKoreksi = value.substring(separatorIndex + 1).toInt();  
-      displayBlink[indexSholat] = indexKoreksi;
-      EEPROM.write(ADDR_BLINK + indexSholat, indexKoreksi);
-    }
-
-    else if (key == "Kr") {
-      int separatorIndex = value.indexOf('-');
-      int indexSholat = value.substring(0, separatorIndex).toInt();
-      int indexKoreksi = value.substring(separatorIndex + 1).toInt();  
-      dataIhty[indexSholat] = indexKoreksi;
-      EEPROM.write(ADDR_IHTY + indexSholat, indexKoreksi);
-    }
-
-    else if (key == "Da") {
-      config.durasiadzan = value.toInt();
-      EEPROM.write(ADDR_DURASIADZAN, config.durasiadzan & 0xFF);
-      EEPROM.write(ADDR_DURASIADZAN + 1, (config.durasiadzan >> 8) & 0xFF);
-    }
-
-    else if (key == "CoHi") {
-      config.Correction = value.toInt();
-      EEPROM.write(ADDR_CORRECTION, config.Correction & 0xFF);
-      EEPROM.write(ADDR_CORRECTION + 1, (config.Correction >> 8) & 0xFF);
-}
-
-
-    else if (key == "Bzr") {
-      stateBuzzer = value.toInt();
-      EEPROM.write(ADDR_BUZZER, stateBuzzer);
-    }
-
-    /*else if (key == "mode") {
-      stateMode = value.toInt();
-      EEPROM.write(ADDR_MODE, stateMode);
-      delay(1000);
-      //ESP.restart();
-    }*
-
-    else if (key == "status") {
-      int state = value.toInt();
-      if(state) Serial.println("PANEL_OK");
-    }
-
-    else if (key == "jadwal") {
-      stateSendSholat = value.toInt();
-    }
-
-    else if (key == "restart") {
-      int state = value.toInt();
-      if(state) {
-        Buzzer(1); 
-        Serial.println("RESTART_OK"); 
-        stateMode = 0;
-        EEPROM.write(ADDR_MODE, stateMode); 
-        delay(1000);
-        //ESP.restart();
-      }
-    }
-
-    else if (key == "passwordPanel") {
-      if (value.length() == 8) {
-        value.toCharArray(password, value.length() + 1);
-        saveStringToEEPROM(ADDR_PASSWORD, value, 8);
-        //server.send(200, "text/plain", "Password WiFi diupdate");
-        Buzzer(1);
-        delay(500);
-        //ESP.restart();
-      }
-    }
-
-    //EEPROM.commit(); // Penting! simpan perubahan
-  }
-  
-}
-*/
-/*
-void loadFromEEPROM() {
-  //Serial.println("=== Membaca Data dari EEPROM ===");
- 
-  for (int i = 0; i < 100; i++) {
-    text1[i] = EEPROM.read(ADDR_TEXT1 + i);
-    if (text1[i] == 0) break;
-  }
-//  Serial.print("Text1: ");
-//  Serial.println(text1);
-  
-  for (int i = 0; i < 100; i++) {
-    text2[i] = EEPROM.read(ADDR_TEXT2 + i);
-    if (text2[i] == 0) break;
-  }
-//  Serial.print("Text2: ");
-//  Serial.println(text2);
-
-  for (int i = 0; i < 100; i++) {
-    name[i] = EEPROM.read(ADDR_NAME + i);
-    if (name[i] == 0) break;
-  }
-//  Serial.print("nama: ");
-//  Serial.println(name);
-
-  brightness = EEPROM.read(ADDR_BRIGHTNESS);
-//  Serial.print("Brightness: ");
-//  Serial.println(brightness);
-
-  speedText1 = EEPROM.read(ADDR_SPEEDTX1);
-//  Serial.print("Speed Text1: ");
-//  Serial.println(speedText1);
-
-  speedText2 = EEPROM.read(ADDR_SPEEDTX2);
-//  Serial.print("Speed Text2: ");
-//  Serial.println(speedText2);
-
-  speedDate = EEPROM.read(ADDR_SPEEDDT);
-//  Serial.print("Speed Date: ");
-//  Serial.println(speedDate);
-
-  speedName = EEPROM.read(ADDR_SPEEDNAME);
-//  Serial.print("Speed Name: ");
-//  Serial.println(speedName);
-
-  // Latitude
-  float latVal;
-  byte *ptrLat = (byte*)(void*)&latVal;
-  for (int i = 0; i < sizeof(float); i++) {
-    ptrLat[i] = EEPROM.read(ADDR_LATITUDE + i);
-  }
-  config.latitude = latVal;
-  Serial.print("Latitude: ");
-  Serial.println(config.latitude, 6);
-
-  // Longitude
-  float lonVal;
-  byte *ptrLon = (byte*)(void*)&lonVal;
-  for (int i = 0; i < sizeof(float); i++) {
-    ptrLon[i] = EEPROM.read(ADDR_LONGITUDE + i);
-  }
-  config.longitude = lonVal;
-  Serial.print("Longitude: ");
-  Serial.println(config.longitude, 6);
-
-  config.zonawaktu = EEPROM.read(ADDR_TZ) | (EEPROM.read(ADDR_TZ + 1) << 8);
-  Serial.print("Zona Waktu: ");
-  Serial.println(config.zonawaktu);
-
-  config.altitude = EEPROM.read(ADDR_ALTITUDE) | (EEPROM.read(ADDR_ALTITUDE + 1) << 8);
-  Serial.print("Altitude: ");
-  Serial.println(config.altitude);
-
-  for (int i = 0; i < 6; i++) {
-    iqomah[i] = EEPROM.read(ADDR_IQOMAH + i);
-//    Serial.print("Iqomah[");
-//    Serial.print(i);
-//    Serial.print("]: ");
-//    Serial.println(iqomah[i]);
-  }
-
-  for (int i = 0; i < 6; i++) {
-    displayBlink[i] = EEPROM.read(ADDR_BLINK + i);
-//    Serial.print("Blink[");
-//    Serial.print(i);
-//    Serial.print("]: ");
-//    Serial.println(displayBlink[i]);
-  }
-
-  for (int i = 0; i < 6; i++) {
-    dataIhty[i] = EEPROM.read(ADDR_IHTY + i);
-//    Serial.print("Ihtiyath[");
-//    Serial.print(i);
-//    Serial.print("]: ");
-//    Serial.println(dataIhty[i]);
-  }
-
-  stateBuzzer = EEPROM.read(ADDR_BUZZER);
-//  Serial.print("Buzzer: ");
-//  Serial.println(stateBuzzer);
-
-  stateMode = EEPROM.read(ADDR_MODE);
-//  Serial.print("mode: ");
-//  Serial.println(stateMode);
-
-  for (int i = 0; i < 8; i++) {
-    password[i] = EEPROM.read(ADDR_PASSWORD + i);
-  }
-  password[8] = '\0';
-//  Serial.print("Password: ");
-//  Serial.println(password);
-
-  // Tambahan yang baru:
-  config.durasiadzan = EEPROM.read(ADDR_DURASIADZAN) | (EEPROM.read(ADDR_DURASIADZAN + 1) << 8);
-//  Serial.print("Durasi Adzan: ");
-//  Serial.println(config.durasiadzan);
-
-  config.Correction = EEPROM.read(ADDR_CORRECTION) | (EEPROM.read(ADDR_CORRECTION + 1) << 8);
-//  Serial.print("Correction: ");
-//  Serial.println(config.Correction);
-
-//  Serial.println("=== Selesai Membaca EEPROM ===\n");
-//  Serial.println("OK");
-}
-*/
  //----------------------------------------------------------------------
 // I2C_ClearBus menghindari gagal baca RTC (nilai 00 atau 165)
 
@@ -699,17 +402,3 @@ void Buzzer(uint8_t state)
       break;
     };
   }
-
-//void readUp(){
-//  showVolumeTemp = true;
-//  volumeDisplayMillis = millis();
-//  volume < 25? volume++ : volume=25;
-//  Serial.println("VOL:" + String(volume));
-//}
-//
-//void readDown(){
-//  showVolumeTemp = true;
-//  volumeDisplayMillis = millis();
-//  volume > 0? volume-- : volume=0;
-//  Serial.println("VOL:" + String(volume));
-//}

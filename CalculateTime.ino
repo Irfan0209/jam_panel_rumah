@@ -1,7 +1,8 @@
 
 //////hijiriyah voidku/////////////////////////////////////////////////
 void islam() {
-  RtcDateTime now = Rtc.GetDateTime();
+  if(adzan) return;
+  //RtcDateTime now = Rtc.GetDateTime();
   static uint32_t sv=0;
   uint32_t timer = millis();
   if(now.Hour() == 00 && now.Minute() == 00 && now.Second() == 00){
@@ -23,7 +24,7 @@ void islam() {
 
 // digunakan untuk menghitung hari pasaran
 int jumlahhari() { 
-  RtcDateTime now = Rtc.GetDateTime();
+ // RtcDateTime now = Rtc.GetDateTime();
   int d = now.Day();
   int m = now.Month();
   int y = now.Year();
