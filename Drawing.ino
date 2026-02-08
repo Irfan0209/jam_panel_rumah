@@ -228,35 +228,39 @@ void drawAzzan()
     uint32_t Tmr = millis();
     const uint8_t limit = config.durasiadzan;
     char buff_jam[10];
-    char buff_sec[2];
+    char buff_sec[4];
     char buff_text1[10];
     char buff_text2[10];
   
     sprintf(buff_jam,"%02d:%02d",now.Hour(),now.Minute());
-    sprintf(buff_sec,"%02d  ",now.Second());
+    sprintf(buff_sec,"%02d",now.Second());
     sprintf(buff_text1,"%s","ADZAN");
     sprintf(buff_text2,"%s",jadwalAzzan[sholatNow]);  
-   
+
+      fType(0); 
+      dwCtr(34,8,buff_sec);//42
+      dwCtr(34,0,buff_jam);
+      
    if (Tmr - lsRn > 500 && ct <= limit)
     {
         lsRn = Tmr;
         if (!(ct & 1))  // Lebih cepat dibandingkan ct % 2 == 0
         {
-          fType(1); Disp.drawText(2,0,buff_text1);
-          fType(1); Disp.drawText(1,8,buff_text2);
+          //fType(0); 
+          Disp.drawText(1,0,buff_text1);
+          Disp.drawText(1,8,buff_text2);
           Buzzer(1);
-          DoSwap = true;
+          
         }
         else 
           {
             Buzzer(0);
           }
-         
+        DoSwap = true;
         ct++;
     }
-      fType(1); dwCtr(42,9,buff_sec);
-      fType(1); dwCtr(34,0,buff_jam);
-       //DoSwap = true;
+      
+      
    if ((Tmr - lsRn) > 1500 && (ct > limit))
     {
         adzan = 0;

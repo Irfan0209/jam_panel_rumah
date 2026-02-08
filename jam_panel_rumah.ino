@@ -87,16 +87,10 @@ bool       DoSwap          = false;
 
 enum Show{
   ANIM_SHOW,
-  ANIM_CLOCK_BIG,
-  ANIM_DATE,
-  ANIM_NAME,
-  ANIM_TEXT1,
-  ANIM_TEXT2,
   ANIM_SHOLAT,
   ANIM_ADZAN,
   ANIM_IQOMAH,
   ANIM_BLINK,
-  UPLOAD
 };
 
 Show show = ANIM_SHOW;
@@ -250,7 +244,7 @@ void loop() {
     lastRtcUpdate = millis();
     now = Rtc.GetDateTime();
   }
-
+  DoSwap = false;
   handleSetTimeSerial();
   check();
   islam();
@@ -273,7 +267,7 @@ void loop() {
   }
 
   buzzerWarning(stateBuzzWar);
-  Disp.swapBuffers();
+  if(DoSwap){Disp.swapBuffers();}
 }
 
 /*void loop() {
