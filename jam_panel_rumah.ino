@@ -51,7 +51,7 @@ struct Config {
   double latitude = -7.364057;
   double longitude = 112.646222;
   uint8_t zonawaktu = 7;
-  int16_t Correction = -1; //Koreksi tanggal hijriyah, -1 untuk mengurangi, 0 tanpa koreksi, 1 untuk menambah
+  int8_t Correction = -1; //Koreksi tanggal hijriyah, -1 untuk mengurangi, 0 tanpa koreksi, 1 untuk menambah
 };
 
 Config config;
@@ -60,29 +60,24 @@ Config config;
 
 // Variabel untuk waktu, tanggal, teks berjalan, tampilan ,dan kecerahan
 char text1[101], text2[101],name[101];
-uint16_t   brightness    = 30;
+uint8_t   brightness    = 160;
 bool       adzan         = 0;
 bool       stateBuzzer   = 1;
 uint8_t    DWidth        = Disp.width();
 uint8_t    DHeight       = Disp.height();
-uint8_t    sholatNow     = -1;
+int8_t     sholatNow     = -1;
 bool       reset_x       = 0; 
 
 /*======library tambahan=======*/
-//bool       flagAnim = false;
-//uint8_t    speedDate      = 40; // Kecepatan default date
-//uint8_t    speedText1     = 40; // Kecepatan default text  
-//uint8_t    speedText2     = 40;
-//uint8_t    speedName      = 40;
-//float      dataFloat[10];
-//int        dataInteger[10];
 bool       stateSendSholat = false; 
-//uint8_t    list,lastList;
-//bool       stateMode       = 0;
 bool       stateBuzzWar    = 0;
-//uint8_t    counterName     = 0;
 bool       DoSwap          = false;
+static uint32_t  lastRtcUpdate = 0;
+ 
+#define SERIAL_BUF 32
 
+char serialBuf[SERIAL_BUF];
+uint8_t serialPos = 0;
 /*============== end ================*/
 
 enum Show{
@@ -143,10 +138,6 @@ void saveIntToEEPROM(int addr, int16_t value) {
   EEPROM.write(addr + 1, highByte(value));
 }
 
-#define SERIAL_BUF 32
-char serialBuf[SERIAL_BUF];
-uint8_t serialPos = 0;
-
 void handleSetTimeSerial() {
   while (Serial.available()) {
     char c = Serial.read();
@@ -203,7 +194,7 @@ void setup() {
   digitalWrite(BUZZ,HIGH);
   delay(200);
   digitalWrite(BUZZ,LOW);
-  int rtn = I2C_ClearBus(); // clear the I2C bus first before calling Wire.begin()
+  int8_t rtn = I2C_ClearBus(); // clear the I2C bus first before calling Wire.begin()
     if (rtn != 0) {
       Serial.println(F("I2C bus error. Could not clear"));
       if (rtn == 1) {
@@ -238,12 +229,10 @@ void setup() {
 
 void loop() {
 
-  static uint32_t lastRtcUpdate = 0;
-
-  if (millis() - lastRtcUpdate >= 1000) { // update tiap 1 detik
-    lastRtcUpdate = millis();
-    now = Rtc.GetDateTime();
-  }
+//  if (millis() - lastRtcUpdate >= 1000) { // update tiap 1 detik
+//    lastRtcUpdate = millis();
+//    now = Rtc.GetDateTime();
+//  }
   DoSwap = false;
   handleSetTimeSerial();
   check();
@@ -270,37 +259,11 @@ void loop() {
   if(DoSwap){Disp.swapBuffers();}
 }
 
-/*void loop() {
-
-    handleSetTimeSerial();
-    check();
-    islam(); 
-    //DoSwap  = false ;
-    sendTimeEvery5Min();
-    Disp.clear();
-
-      switch(show){
-        case ANIM_SHOW :
-           showAnimasi();
-        break;
- 
-        case ANIM_ADZAN :
-           drawAzzan();
-        break;
-
-        case ANIM_SHOLAT :
-          //updateAnimSholat();
-        break;
-      };
-
-  buzzerWarning(stateBuzzWar);
-  if(DoSwap){Disp.swapBuffers();} // Swap Buffer if Change
-}*/
 
  //----------------------------------------------------------------------
 // I2C_ClearBus menghindari gagal baca RTC (nilai 00 atau 165)
 
-int I2C_ClearBus() {
+uint8_t I2C_ClearBus() {
   
 #if defined(TWCR) && defined(TWEN)
   TWCR &= ~(_BV(TWEN)); //Disable the Atmel 2-Wire interface so we can control the SDA and SCL pins directly
@@ -383,7 +346,7 @@ void buzzerWarning(int cek){
     
 }
 
-void Buzzer(uint8_t state)
+void Buzzer(bool state)
   {
     if(!stateBuzzer) return;
     

@@ -2,7 +2,7 @@
 //////hijiriyah voidku/////////////////////////////////////////////////
 void islam() {
   if(adzan) return;
-  //RtcDateTime now = Rtc.GetDateTime();
+  RtcDateTime now = Rtc.GetDateTime();
   static uint32_t sv=0;
   uint32_t timer = millis();
   if(now.Hour() == 00 && now.Minute() == 00 && now.Second() == 00){
@@ -23,19 +23,19 @@ void islam() {
 }
 
 // digunakan untuk menghitung hari pasaran
-int jumlahhari() { 
- // RtcDateTime now = Rtc.GetDateTime();
-  int d = now.Day();
-  int m = now.Month();
-  int y = now.Year();
+uint16_t jumlahhari() { 
+  RtcDateTime now = Rtc.GetDateTime();
+  uint8_t d = now.Day();
+  uint8_t m = now.Month();
+  uint16_t y = now.Year();
 
-  static const int hb[] = {0, 31, 59, 90, 120, 151, 181, 212, 243, 273, 304, 334, 365};
-  int ht = (y - 1970) * 365 - 1;
-  int hs = hb[m - 1] + d;
+  static const uint16_t hb[] = {0, 31, 59, 90, 120, 151, 181, 212, 243, 273, 304, 334, 365};
+  uint16_t ht = (y - 1970) * 365 - 1;
+  uint16_t hs = hb[m - 1] + d;
 
   if (y % 4 == 0 && m > 2) hs++; // Tambahkan 1 hari jika tahun kabisat dan lewat Februari
 
-  int kab = (y - 1969) / 4;  // Hitung langsung jumlah tahun kabisat
+  uint16_t kab = (y - 1969) / 4;  // Hitung langsung jumlah tahun kabisat
 
   return (ht + hs + kab);
 }

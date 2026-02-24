@@ -16,7 +16,7 @@
 
 void showAnimasi() {
     //if (adzan) return;
-   //  RtcDateTime now = Rtc.GetDateTime();
+     RtcDateTime now = Rtc.GetDateTime();
     static uint8_t y = 0;
     static uint8_t s = 0; // 0 = in, 1 = out
     static uint32_t lsRn = 0;
@@ -32,13 +32,13 @@ void showAnimasi() {
     
     // Format jam berkedip setiap detik ganjil
     char buff_jam[8];
-    sprintf(buff_jam, (detik & 1) ? "%02d:%02d" : "%02d %02d", now.Hour(), now.Minute());
+    snprintf(buff_jam,sizeof(buff_jam), (detik & 1) ? "%02d:%02d" : "%02d %02d", now.Hour(), now.Minute());
 
     // Format tanggal, bulan, tahun
     char buff_tgl[3], buff_bln[3], buff_thn[3];
-    sprintf(buff_tgl, "%02d", now.Day());
-    sprintf(buff_bln, "%02d", now.Month());
-    sprintf(buff_thn, "%02d", tahun - 2000);
+    snprintf(buff_tgl,sizeof(buff_tgl), "%02d", now.Day());
+    snprintf(buff_bln,sizeof(buff_bln), "%02d", now.Month());
+    snprintf(buff_thn,sizeof(buff_thn), "%02d", tahun - 2000);
 
    // Ambil nama hari dan pasar Jawa dari PROGMEM
     char buff_hari[8], buff_jawa[8];
@@ -220,7 +220,7 @@ void updateAnimSholat() {
 /*======================= animasi memasuki waktu sholat ====================================*/
 void drawAzzan()
   {
-    //RtcDateTime now = Rtc.GetDateTime();
+    RtcDateTime now = Rtc.GetDateTime();
     static const char *jadwal[] = {"SUBUH", "DZUHUR", "ASHAR", "MAGHRIB","ISYA'"};
     const char *sholat = jadwal[sholatNow]; 
     static uint8_t ct = 0;
@@ -272,7 +272,7 @@ void drawAzzan()
 //===================================== end =================================//
 
 //=========================== setingan untuk tampilan text=================//
-void fType(int x)
+void fType(uint8_t x)
   {
     if(x==0) Disp.setFont(Font0);
     else if(x==1) Disp.setFont(Font1); 
@@ -283,7 +283,7 @@ void fType(int x)
   
   }
 
-  void dwCtr(int x, int y, String Msg){
+  void dwCtr(uint8_t x, uint8_t y, String Msg){
    uint16_t   tw = Disp.textWidth(Msg);
    uint16_t   c = int((DWidth-x-tw)/2);
    Disp.drawText(x+c,y,Msg);

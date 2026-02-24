@@ -104,7 +104,7 @@ void check() {
   if (!stateSendSholat && nowMs - scanTmr >= 100) {
     scanTmr = nowMs;
 
-   // RtcDateTime now = Rtc.GetDateTime();
+    RtcDateTime now = Rtc.GetDateTime();
     uint8_t jam   = now.Hour();
     uint8_t menit = now.Minute();
     uint8_t detik = now.Second();
