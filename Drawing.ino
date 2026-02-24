@@ -74,7 +74,7 @@ void showAnimasi() {
 
 void sendTimeEvery5Min() {
 
-  //RtcDateTime now = Rtc.GetDateTime();
+  RtcDateTime now = Rtc.GetDateTime();
 
   static int8_t lastSentMinute = -1;
   uint8_t hh = now.Hour();
