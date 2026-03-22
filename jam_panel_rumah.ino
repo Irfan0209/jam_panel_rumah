@@ -43,7 +43,7 @@ Hijriyah Hijir;
 
 uint8_t iqomah[]        = {1,1,1,1,1,1};
 uint8_t displayBlink[]  = {1,1,1,1,1,1};
-uint8_t dataIhty[]      = {0,0,0,0,0,0};
+uint8_t dataIhty[]      = {3,4,2,3,3,0};
 
 struct Config {
   uint8_t durasiadzan = 60;
@@ -179,7 +179,7 @@ void Disp_init()
     Disp.swapBuffers();
     }
 
-void setBrightness(int bright)
+void setBrightness(uint8_t bright)
   { Timer1.pwm(9,bright);}
 
 void scan()
@@ -217,7 +217,7 @@ void setup() {
   Serial.println("PANEL_OK");
   Disp_init();
   delay(1000);
-  for(int i = 0; i < 4; i++)
+  for(uint8_t i = 0; i < 4; i++)
    {
       Buzzer(1);
       delay(80);
@@ -229,10 +229,6 @@ void setup() {
 
 void loop() {
 
-//  if (millis() - lastRtcUpdate >= 1000) { // update tiap 1 detik
-//    lastRtcUpdate = millis();
-//    now = Rtc.GetDateTime();
-//  }
   DoSwap = false;
   handleSetTimeSerial();
   check();

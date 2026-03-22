@@ -1,7 +1,7 @@
  char * const pasar[]  = {"WAGE", "KLIWON", "LEGI", "PAHING", "PON"}; 
  char * const Hari[]  = {"MINGGU","SENIN","SELASA","RABU","KAMIS","JUM'AT","SABTU"};
 //const char * const bulanMasehi[] PROGMEM = {"JANUARI", "FEBRUARI", "MARET", "APRIL", "MEI", "JUNI", "JULI", "AGUSTUS", "SEPTEMBER", "OKTOBER", "NOVEMBER", "DESEMBER" };
-// char* jadwal[] = {"SUBUH", "TERBIT", "DHUHA", "DZUHUR", "ASHAR", "MAGRIB", "ISYA'"};
+ char* jadwal[] = {"SUBUH", "TERBIT", "DHUHA", "DZUHUR", "ASHAR", "MAGRIB", "ISYA'"};
  char* jadwalAzzan[] = {"SUBUH","DZUHUR", "ASHAR", "MAGRIB", "ISYA'"};
 //const char * const namaBulanHijriah[] PROGMEM = {
 //    "MUHARRAM", "SHAFAR", "RABIUL AWAL",
