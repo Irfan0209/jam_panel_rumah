@@ -71,6 +71,7 @@ bool       reset_x       = 0;
 /*======library tambahan=======*/
 bool       stateSendSholat = false; 
 bool       stateBuzzWar    = 0;
+bool       butuhHitungJadwal = true;
 bool       DoSwap          = false;
 static uint32_t  lastRtcUpdate = 0;
  
@@ -216,7 +217,7 @@ void setup() {
   
   Serial.println("PANEL_OK");
   Disp_init();
-  delay(1000);
+  delay(500);
   for(uint8_t i = 0; i < 4; i++)
    {
       Buzzer(1);
@@ -280,7 +281,7 @@ uint8_t I2C_ClearBus() {
   }
 
   boolean SDA_LOW = (digitalRead(SDA) == LOW);  // vi. Check SDA input.
-  int clockCount = 20; // > 2x9 clock
+  uint8_t clockCount = 20; // > 2x9 clock
 
   while (SDA_LOW && (clockCount > 0)) { //  vii. If SDA is Low,
     clockCount--;
@@ -294,7 +295,7 @@ uint8_t I2C_ClearBus() {
     delayMicroseconds(10); //  for >5uS
     // The >5uS is so that even the slowest I2C devices are handled.
     SCL_LOW = (digitalRead(SCL) == LOW); // Check if SCL is Low.
-    int counter = 20;
+    uint8_t counter = 20;
     while (SCL_LOW && (counter > 0)) {  //  loop waiting for SCL to become High only wait 2sec.
       counter--;
       delay(100);
@@ -323,7 +324,7 @@ uint8_t I2C_ClearBus() {
   return 0; // all ok
 }
 
-void buzzerWarning(int cek){
+void buzzerWarning(bool cek){
 
    static bool state = false;
    static uint32_t save = 0;
